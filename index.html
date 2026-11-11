@@ -432,7 +432,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbw94XRTry86xXiTShyPP4w1Rg3lHB47Wz_zNoz-QsNKhGqi1dn9wNd7Kv0mX2EH2Ms/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbz4673aZVdvwuvkPYBW0hpM1va1urHN9xfKNnyU5MYe_pjszNbtK1U2AobmNCY-eA0POg/exec";
         const SENHA_MESTRE_ADM = "coopanest2026"; 
 
         function formatarDataBR(dataStr) {
@@ -733,9 +733,20 @@
             let senha = prompt(`Para fechar o período ${periodoAtual} e protegê-lo contra edições, digite a senha mestre de administrador:`);
             if (senha === null) return;
             if (senha.trim() === SENHA_MESTRE_ADM) {
-                periodosFechados.push(periodoAtual);
+                let periodoFechadoAgora = periodoAtual;
+                periodosFechados.push(periodoFechadoAgora);
                 enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
-                alert(`Período ${periodoAtual} fechado com sucesso! Os lançamentos e backups foram mantidos em segurança.`);
+
+                // Tenta encontrar o próximo período sequencial (cronologicamente menor na lista decrescente)
+                // Ex: Se fechou 202610 e existe 202611 na lista, abre ele automaticamente.
+                let indexAtual = periodos.indexOf(periodoFechadoAgora);
+                if (indexAtual > 0) {
+                    // periodos está ordenado de forma decrescente (ex: 202611, 202610), então o anterior no array é o período seguinte/mais recente
+                    let proximoPeriodo = periodos[indexAtual - 1];
+                    periodoAtual = proximoPeriodo;
+                }
+
+                alert(`Período ${periodoFechadoAgora} fechado com sucesso!`);
                 inicializarPeriodos();
                 atualizarTabelaBaixas();
             } else {
