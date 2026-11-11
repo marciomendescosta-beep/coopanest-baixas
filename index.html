@@ -632,8 +632,7 @@
             try {
                 await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
                 document.getElementById('statusSync').innerText = "Sincronizado";
@@ -737,10 +736,8 @@
                     periodosFechados.push(periodoFechadoAgora);
                 }
                 
-                // Salva na nuvem e aguarda
                 await enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
 
-                // Identifica o próximo período cronologicamente superior (índice anterior no array decrescente, ex: 202610 -> 202611)
                 let indexAtual = periodos.indexOf(periodoFechadoAgora);
                 if (indexAtual > 0) {
                     periodoAtual = periodos[indexAtual - 1];
