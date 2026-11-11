@@ -630,11 +630,15 @@
         async function enviarDadosNuvem(payload) {
             if(API_URL.includes("SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI")) return;
             try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
+                let params = new URLSearchParams();
+                for (let key in payload) {
+                    if (typeof payload[key] === 'object') {
+                        params.append(key, JSON.stringify(payload[key]));
+                    } else {
+                        params.append(key, payload[key]);
+                    }
+                }
+                await fetch(`${API_URL}?${params.toString()}`);
                 document.getElementById('statusSync').innerText = "Sincronizado";
             } catch(e) {
                 document.getElementById('statusSync').innerText = "Erro ao Sincronizar";
@@ -736,7 +740,7 @@
                     periodosFechados.push(periodoFechadoAgora);
                 }
                 
-                await enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
+                await enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: JSON.stringify(periodosFechados) });
 
                 let indexAtual = periodos.indexOf(periodoFechadoAgora);
                 if (indexAtual > 0) {
@@ -777,7 +781,7 @@
             let index = periodosFechados.indexOf(periodoAlvo);
             if (index > -1) {
                 periodosFechados.splice(index, 1);
-                enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
+                enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: JSON.stringify(periodosFechados) });
                 alert(`Período ${periodoAlvo} reaberto com sucesso!`);
                 atualizarSelectReabrir();
                 inicializarPeriodos();
@@ -834,7 +838,7 @@
             ordenarConvenios();
             carregarSelectConvenios();
             atualizarTabelaConvenios();
-            enviarDadosNuvem({ action: "salvarConvenios", lista: listaConvenios });
+            enviarDadosNuvem({ action: "salvarConvenios", lista: JSON.stringify(listaConvenios) });
         }
 
         document.getElementById('formConvenio').addEventListener('submit', function(e) {
@@ -850,7 +854,7 @@
             atualizarTabelaConvenios();
             this.reset();
             document.getElementById('covAtivo').checked = true;
-            enviarDadosNuvem({ action: "salvarConvenios", lista: listaConvenios });
+            enviarDadosNuvem({ action: "salvarConvenios", lista: JSON.stringify(listaConvenios) });
             alert('Convênio adicionado e sincronizado com a nuvem!');
         });
 
@@ -884,7 +888,23 @@
             regs.push(item);
             this.reset();
             atualizarTabelaBaixas();
-            enviarDadosNuvem({ action: "salvarBaixa", periodo: periodoAtual, item: item });
+            enviarDadosNuvem({
+                action: "salvarBaixa",
+                periodo: periodoAtual,
+                id: item.id,
+                convenio: item.convenio,
+                notaFiscal: item.notaFiscal,
+                dataRec: item.dataRec,
+                vlrBruto: item.vlrBruto,
+                vlrLiquido: item.vlrLiquido,
+                tipo: item.tipo,
+                cobrado: item.cobrado,
+                recebido: item.recebido,
+                glosa: item.glosa,
+                baixado: item.baixado,
+                difBaixa: item.difBaixa,
+                obs: item.obs
+            });
             alert('Lançamento salvo e sincronizado!');
         });
 
@@ -933,7 +953,23 @@
             let obsVal = document.getElementById(`obs_${index}`).value;
             regs[index].obs = (obsVal && obsVal !== 'undefined') ? obsVal : '';
 
-            enviarDadosNuvem({ action: "salvarBaixa", periodo: periodoAtual, item: regs[index] });
+            enviarDadosNuvem({
+                action: "salvarBaixa",
+                periodo: periodoAtual,
+                id: regs[index].id,
+                convenio: regs[index].convenio,
+                notaFiscal: regs[index].notaFiscal,
+                dataRec: regs[index].dataRec,
+                vlrBruto: regs[index].vlrBruto,
+                vlrLiquido: regs[index].vlrLiquido,
+                tipo: regs[index].tipo,
+                cobrado: regs[index].cobrado,
+                recebido: regs[index].recebido,
+                glosa: regs[index].glosa,
+                baixado: regs[index].baixado,
+                difBaixa: regs[index].difBaixa,
+                obs: regs[index].obs
+            });
             alert('Baixa atualizada e salva na nuvem!');
             atualizarTabelaBaixas();
         }
