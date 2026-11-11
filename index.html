@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coopanest-PB — Gestão de Baixas e Convênios</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1b4332;
+            --secondary: #2d6a4f;
+            --accent: #52b788;
+            --bg: #f4f6f8;
+            --card-bg: #ffffff;
+            --text: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        header h1 { margin: 0; font-size: 20px; }
+        .period-selector {
+            background: rgba(255,255,255,0.15);
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .period-selector select, .period-selector button {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: none;
+            font-size: 13px;
+        }
+        .status-sync {
+            font-size: 11px;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 10px 18px;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background-color: var(--secondary);
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #555;
+        }
+        input, select {
+            padding: 7px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        input:disabled, select:disabled {
+            background-color: #e9ecef;
+            color: #495057;
+            cursor: not-allowed;
+        }
+        button.submit-btn {
+            grid-column: 1 / -1;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        button.submit-btn:hover { background-color: var(--accent); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        th {
+            background-color: var(--primary);
+            color: white;
+        }
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .kpi-card h3 { margin: 0; font-size: 12px; color: #666; }
+        .kpi-card p { font-size: 18px; font-weight: bold; color: var(--primary); margin: 4px 0 0; }
+        
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: stretch;
+        }
+        @media (max-width: 1200px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+        }
+        .charts-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .chart-box {
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+            height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .btn-action-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .action-btn {
+            border: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .btn-save { background-color: #2b9348; display: none; }
+        .btn-save:hover { background-color: #55a630; }
+        .btn-edit { background-color: #457b9d; display: flex; }
+        .btn-edit:hover { background-color: #1d3557; }
+        .btn-delete { background-color: #d90429; }
+        .btn-delete:hover { background-color: #ef233c; }
+
+        .input-inline {
+            width: 90%;
+            padding: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <h1>Coopanest-PB</h1>
+            <div class="period-selector">
+                <label style="color:white; margin:0; font-size:12px;">Período:</label>
+                <select id="selectPeriodo" onchange="mudarPeriodo(this.value)"></select>
+                <button onclick="criarNovoPeriodo()" style="background:var(--accent); color:white; font-weight:bold; cursor:pointer;">+ Novo</button>
+                <button onclick="fecharPeriodoAtual()" id="btnFecharPeriodo" style="background:#e76f51; color:white; font-weight:bold; cursor:pointer;" title="Fechar período com senha adm">🔒 Fechar Período</button>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span id="statusSync" class="status-sync">Sincronizando...</span>
+            <span>Gestão de Baixas</span>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('lancamentos', event)">Novo Lançamento</button>
+        <button class="tab-btn" onclick="switchTab('graficos', event)">Gráficos e Indicadores</button>
+        <button class="tab-btn" onclick="switchTab('convenios', event)">Gerenciar Convênios</button>
+        <button class="tab-btn" onclick="switchTab('configuracoes', event)">Configurações</button>
+    </div>
+
+    <!-- ABA 1: NOVO LANÇAMENTO & HISTÓRICO -->
+    <div id="lancamentos" class="tab-content active">
+        <div class="card" id="cardNovoLancamento">
+            <h3>Novo Lançamento de Baixa (Setor de Entrada)</h3>
+            <form id="formInicial">
+                <div class="form-group">
+                    <label>Convênio</label>
+                    <select id="selectConvenio" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Nota Fiscal</label>
+                    <input type="text" id="notaFiscal" required>
+                </div>
+                <div class="form-group">
+                    <label>Data Recebimento</label>
+                    <input type="date" id="dataRec" required>
+                </div>
+                <div class="form-group">
+                    <label>Valor Bruto (R$)</label>
+                    <input type="text" id="vlrBruto" required oninput="mascaraMoedaInput(this)">
+                </div>
+                <div class="form-group">
+                    <label>Valor Líquido (R$)</label>
+                    <input type="text" id="vlrLiquido" required oninput="mascaraMoedaInput(this)">
+                </div>
+                <button type="submit" class="submit-btn" id="btnSalvarLancamento">Salvar Lançamento Inicial</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0;">Histórico de Lançamentos Registrados e Complementação da Baixa</h3>
+                <span id="badgeStatusPeriodo" style="font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 4px; background: #e9ecef; color: #495057;">Status: Aberto</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="tabelaBaixas">
+                    <thead>
+                        <tr>
+                            <th>Convênio</th>
+                            <th>NF</th>
+                            <th>Data Rec.</th>
+                            <th>Bruto</th>
+                            <th>Líquido</th>
+                            <th>Tipo</th>
+                            <th>Cobrado</th>
+                            <th>Recebido</th>
+                            <th>Glosa</th>
+                            <th>Baixado</th>
+                            <th>Dif. Baixa</th>
+                            <th>Obs.</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA 2: GRÁFICOS E TABELA DE RESUMO -->
+    <div id="graficos" class="tab-content">
+        <div class="kpi-container">
+            <div class="kpi-card">
+                <h3>Total Bruto NF</h3>
+                <p id="kpiRecebido">R$ 0,00</p>
+            </div>
+            <div class="kpi-card">
+                <h3>Total Baixado</h3>
+                <p id="kpiBaixado">R$ 0,00</p>
+            </div>
+            <div class="kpi-card">
+                <h3>% Baixado</h3>
+                <p id="kpiPct">0,00%</p>
+            </div>
+            <div class="kpi-card">
+                <h3>Dif. de Baixa Total</h3>
+                <p id="kpiDifGeral">R$ 0,00</p>
+            </div>
+        </div>
+
+        <div class="dashboard-layout">
+            <div class="card" style="margin-bottom:0; height:455px; display:flex; flex-direction:column; box-sizing:border-box;">
+                <h3>Resumo por Convênio</h3>
+                <div style="overflow-y: auto; flex-grow:1;">
+                    <table id="tabelaResumo">
+                        <thead>
+                            <tr>
+                                <th>Convênio</th>
+                                <th>Valor Bruto NF</th>
+                                <th>Valor Recebido</th>
+                                <th>Baixado</th>
+                                <th>% Baixado</th>
+                                <th>Dif. de Baixa</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="charts-column">
+                <div class="chart-box">
+                    <h4 style="margin:0 0 6px; font-size:11px; text-align:center;">Recebido por Convênio</h4>
+                    <div style="position:relative; width:100%; height:170px; display:flex; justify-content:center;">
+                        <canvas id="chartRecebido"></canvas>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h4 style="margin:0 0 6px; font-size:11px; text-align:center;">Baixado por Convênio</h4>
+                    <div style="position:relative; width:100%; height:170px; display:flex; justify-content:center;">
+                        <canvas id="chartBaixado"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA 3: CADASTRO DE CONVÊNIOS -->
+    <div id="convenios" class="tab-content">
+        <div class="card">
+            <h3>Cadastrar Novo Convênio</h3>
+            <form id="formConvenio">
+                <div class="form-group">
+                    <label>Nome do Convênio</label>
+                    <input type="text" id="covNome" required>
+                </div>
+                <div class="form-group">
+                    <label>CNPJ</label>
+                    <input type="text" id="covCNPJ" required>
+                </div>
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px; margin-top: 15px;">
+                    <input type="checkbox" id="covAtivo" checked style="width: 20px; height: 20px;">
+                    <label for="covAtivo" style="margin-bottom: 0; font-size: 14px; cursor: pointer;">Ativo</label>
+                </div>
+                <button type="submit" class="submit-btn">Adicionar Convênio</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Convênios Cadastrados</h3>
+            <div style="overflow-x: auto;">
+                <table id="tabelaConvenios">
+                    <thead>
+                        <tr>
+                            <th>NOME</th>
+                            <th>CNPJ</th>
+                            <th>ATIVO</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA 4: CONFIGURAÇÕES (PROTEGIDA) -->
+    <div id="configuracoes" class="tab-content">
+        <div class="card" id="cardLoginConfig" style="max-width: 400px;">
+            <h3>Área Restrita - Configurações</h3>
+            <p style="font-size: 13px; color: #666;">Digite a senha de administrador para acessar as configurações.</p>
+            <div class="form-group">
+                <label>Senha de Administrador</label>
+                <input type="password" id="senhaAdmInput" placeholder="Senha mestre">
+            </div>
+            <button type="button" class="submit-btn" onclick="verificarSenhaAdm()">Entrar</button>
+        </div>
+
+        <div class="card" id="cardPainelConfig" style="max-width: 500px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0;">Painel do Administrador</h3>
+                <button type="button" onclick="bloquearConfig()" style="background:#d90429; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px;">Sair / Bloquear</button>
+            </div>
+            
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+                <h4 style="margin: 0 0 10px 0; color: var(--primary);">Configurar Senha de Exclusão</h4>
+                <form id="formSenha">
+                    <div class="form-group">
+                        <label>Nova Senha de Exclusão</label>
+                        <input type="password" id="inputNovaSenha" placeholder="Digite a nova senha de segurança" required>
+                    </div>
+                    <button type="submit" class="submit-btn" style="margin-top:5px;">Salvar Senha na Nuvem</button>
+                </form>
+            </div>
+
+            <div>
+                <h4 style="margin: 0 0 10px 0; color: var(--primary);">Gerenciamento de Períodos Fechados</h4>
+                <p style="font-size: 12px; color: #666;">Aqui você pode reabrir um período caso precise fazer algum ajuste de última hora.</p>
+                <div class="form-group">
+                    <label>Período para Reabrir</label>
+                    <select id="selectReabrirPeriodo"></select>
+                </div>
+                <button type="button" class="submit-btn" style="background: #457b9d; margin-top:5px;" onclick="reabrirPeriodoSelecionado()">Reabrir Período</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbw94XRTry86xXiTShyPP4w1Rg3lHB47Wz_zNoz-QsNKhGqi1dn9wNd7Kv0mX2EH2Ms/exec";
+        const SENHA_MESTRE_ADM = "coopanest2026"; 
+
+        function formatarDataBR(dataStr) {
+            if (!dataStr) return '';
+            let limpa = dataStr.toString().split('T')[0];
+            let partes = limpa.split('-');
+            if (partes.length === 3) {
+                return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            }
+            return dataStr;
+        }
+
+        function verificarSenhaAdm() {
+            let digitada = document.getElementById('senhaAdmInput').value;
+            if (digitada === SENHA_MESTRE_ADM) {
+                document.getElementById('cardLoginConfig').style.display = 'none';
+                document.getElementById('cardPainelConfig').style.display = 'block';
+                document.getElementById('senhaAdmInput').value = '';
+                atualizarSelectReabrir();
+            } else {
+                alert("Senha de administrador incorreta!");
+            }
+        }
+
+        function bloquearConfig() {
+            document.getElementById('cardPainelConfig').style.display = 'none';
+            document.getElementById('cardLoginConfig').style.display = 'block';
+        }
+
+        let listaConvenios = [
+            {nome: "AFRAFEP", cnpj: "9306242000182", ativo: true},
+            {nome: "AMI SAUDE", cnpj: "70110952000143", ativo: true},
+            {nome: "AMIL ASSISTENCIA MEDICA", cnpj: "3991125000119", ativo: true},
+            {nome: "ASSEFAZ", cnpj: "628107003285", ativo: true},
+            {nome: "ASSOCIAÇÃO PETROBRAS DE SAÚDE", cnpj: "39427632000171", ativo: true},
+            {nome: "BRADESCO SAUDE", cnpj: "92693118000160", ativo: true},
+            {nome: "CAMED SAUDE", cnpj: "5814777000103", ativo: true},
+            {nome: "CAPESESP", cnpj: "30036685000197", ativo: true},
+            {nome: "CAPITANIA DOS PORTOS", cnpj: "394502003755", ativo: true},
+            {nome: "CASSI", cnpj: "33719485002332", ativo: true},
+            {nome: "CLINEPA", cnpj: "29883981000144", ativo: true},
+            {nome: "COMSEDER", cnpj: "70094578000130", ativo: true},
+            {nome: "CONAB", cnpj: "26461699038820", ativo: true},
+            {nome: "CONVÊNIO EVENTUAL", cnpj: "0", ativo: true},
+            {nome: "EMBRATEL", cnpj: "33530486003225", ativo: true},
+            {nome: "FACHESF - LUMINAR", cnpj: "42160192000143", ativo: true},
+            {nome: "FCA - STELLANTIS", cnpj: "33922160000228", ativo: true},
+            {nome: "FUNASA", cnpj: "2618303000106", ativo: true},
+            {nome: "FUNDO MUNICIPAL DE SAUDE DE CABEDELO", cnpj: "4849697000120", ativo: true},
+            {nome: "FUSEX", cnpj: "9544418000134", ativo: true},
+            {nome: "GAMA SAÚDE LTDA", cnpj: "2009924000184", ativo: true},
+            {nome: "GEAP", cnpj: "3658432001316", ativo: true},
+            {nome: "HAPVIDA", cnpj: "63554067000198", ativo: true},
+            {nome: "HARF - HOSPITAL DE AERONÁUTICA DE RECIFE", cnpj: "394429006494", ativo: true},
+            {nome: "HOSPITAL FLAVIO RIBEIRO", cnpj: "9433715000102", ativo: true},
+            {nome: "HOSPITAL GERAL HAPVIDA", cnpj: "9114695000107", ativo: true},
+            {nome: "HOSPITAL NAPOLEAO LAUREANO", cnpj: "9112236000194", ativo: true},
+            {nome: "HOSPITAL SÃO VICENTE DE PAULA", cnpj: "9124165000140", ativo: true},
+            {nome: "LIFE EMPRESARIAL SAUDE LTDA", cnpj: "4558034000157", ativo: true},
+            {nome: "MAXIMED", cnpj: "57303461000150", ativo: true},
+            {nome: "MEDISERVICE", cnpj: "57746455000178", ativo: true},
+            {nome: "NOVA DIAGNOSTICO POR IMAGEM", cnpj: "4489715000100", ativo: true},
+            {nome: "PARTICULAR", cnpj: "35491356000150", ativo: true},
+            {nome: "PETROBRAS DISTRIBUIDORA S A", cnpj: "34274233000102", ativo: true},
+            {nome: "PLAN-ASSISTE", cnpj: "26989715006909", ativo: true},
+            {nome: "POSTAL SAÚDE", cnpj: "18275071000162", ativo: true},
+            {nome: "RECIBO PARTICULAR", cnpj: "35491356000150", ativo: true},
+            {nome: "SAUDE CAIXA", cnpj: "360305003634", ativo: true},
+            {nome: "SB SAÚDE", cnpj: "28633372000174", ativo: true},
+            {nome: "SELECT", cnpj: "37035441000139", ativo: true},
+            {nome: "SF SAÚDE", cnpj: "60646012000110", ativo: true},
+            {nome: "SMILE SAÚDE", cnpj: "37135365000486", ativo: true},
+            {nome: "SUL AMERICA COMPANHIA DE SEGURO SAUDE", cnpj: "1685053000156", ativo: true},
+            {nome: "UNIMED", cnpj: "8680639000177", ativo: true}
+        ];
+
+        let periodos = ["202610", "202611"];
+        let periodoAtual = "202610";
+        let baseDadosBaixas = {};
+        let periodosFechados = [];
+        let senhaExclusao = "";
+
+        let chartRecInstance = null;
+        let chartBaixInstance = null;
+
+        function formatarMoeda(valor) {
+            return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function parseMoedaInput(str) {
+            if (!str) return 0;
+            let valStr = str.toString().trim();
+            let negativo = valStr.includes('-');
+            let limpo = valStr.replace(/[^\d,]/g, '').replace(',', '.');
+            let num = parseFloat(limpo) || 0;
+            return negativo ? -num : num;
+        }
+
+        function mascaraMoedaInput(input) {
+            let valStr = input.value;
+            let negativo = valStr.includes('-');
+            let v = valStr.replace(/\D/g, '');
+            if (v === '') { 
+                input.value = negativo ? '-' : ''; 
+                return; 
+            }
+            v = (parseInt(v, 10) / 100).toFixed(2) + '';
+            v = v.replace('.', ',');
+            v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+            input.value = (negativo ? '-' : '') + v;
+        }
+
+        function ordenarConvenios() {
+            listaConvenios.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
+        }
+
+        async function carregarDadosNuvem() {
+            try {
+                if(API_URL.includes("SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI")) {
+                    document.getElementById('statusSync').innerText = "Modo Local";
+                    ordenarConvenios();
+                    inicializarPeriodos();
+                    carregarSelectConvenios();
+                    atualizarTabelaConvenios();
+                    atualizarTabelaBaixas();
+                    return;
+                }
+                let res = await fetch(`${API_URL}?action=carregarTudo`);
+                let json = await res.json();
+                
+                baseDadosBaixas = {};
+                if (json.baixas && json.baixas.length > 1) {
+                    for (let i = 1; i < json.baixas.length; i++) {
+                        let r = json.baixas[i];
+                        let per = r[0];
+                        if (per) {
+                            if (!baseDadosBaixas[per]) baseDadosBaixas[per] = [];
+                            periodos.push(per);
+                        }
+                        
+                        let dataLimpa = r[4] ? r[4].toString().split('T')[0] : '';
+
+                        if (per) {
+                            baseDadosBaixas[per].push({
+                                id: r[1], convenio: r[2], notaFiscal: r[3], dataRec: dataLimpa,
+                                vlrBruto: parseFloat(r[5])||0, vlrLiquido: parseFloat(r[6])||0,
+                                tipo: r[7], cobrado: parseFloat(r[8])||0, recebido: parseFloat(r[9])||0,
+                                glosa: parseFloat(r[10])||0, baixado: parseFloat(r[11])||0,
+                                difBaixa: parseFloat(r[12])||0, obs: (r[13] && r[13] !== 'undefined') ? r[13] : ''
+                            });
+                        }
+                    }
+                }
+                
+                if (json.convenios && json.convenios.length > 1) {
+                    let mapConv = {};
+                    for (let i = 1; i < json.convenios.length; i++) {
+                        let c = json.convenios[i];
+                        mapConv[c[0]] = { nome: c[0], cnpj: c[1], ativo: c[2] === true || c[2] === "true" || c[2] === "Verdadeiro" };
+                    }
+                    listaConvenios = Object.values(mapConv);
+                }
+
+                ordenarConvenios();
+
+                if (json.config && json.config.length > 1) {
+                    for (let i = 1; i < json.config.length; i++) {
+                        if (json.config[i][0] === "senhaExclusao" && json.config[i][1]) {
+                            senhaExclusao = json.config[i][1].toString().trim();
+                        }
+                        if (json.config[i][0] === "periodosFechados" && json.config[i][1]) {
+                            try {
+                                periodosFechados = JSON.parse(json.config[i][1]);
+                            } catch(e) { periodosFechados = []; }
+                        }
+                    }
+                }
+
+                inicializarPeriodos();
+                carregarSelectConvenios();
+                atualizarTabelaConvenios();
+                atualizarTabelaBaixas();
+                document.getElementById('statusSync').innerText = "Sincronizado";
+            } catch (err) {
+                console.error(err);
+                document.getElementById('statusSync').innerText = "Erro ao Sincronizar";
+                ordenarConvenios();
+                inicializarPeriodos();
+                carregarSelectConvenios();
+                atualizarTabelaConvenios();
+                atualizarTabelaBaixas();
+            }
+        }
+
+        async function enviarDadosNuvem(payload) {
+            if(API_URL.includes("SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI")) return;
+            try {
+                navigator.sendBeacon(API_URL, JSON.stringify(payload));
+                document.getElementById('statusSync').innerText = "Sincronizado";
+            } catch(e) {
+                fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(() => {});
+                document.getElementById('statusSync').innerText = "Sincronizado";
+            }
+        }
+
+        function inicializarPeriodos() {
+            const select = document.getElementById('selectPeriodo');
+            if(!select) return;
+
+            let periodoSelecionadoAntes = select.value;
+
+            let chavesDinamicas = Object.keys(baseDadosBaixas);
+            let todos = [...periodos, ...chavesDinamicas];
+
+            periodos = [...new Set(todos.map(p => p ? p.toString().trim() : '').filter(p => p.length > 0))];
+            periodos.sort().reverse();
+
+            if (periodoSelecionadoAntes && periodos.includes(periodoSelecionadoAntes)) {
+                periodoAtual = periodoSelecionadoAntes;
+            } else if (!periodos.includes(periodoAtual) && periodos.length > 0) {
+                periodoAtual = periodos[0];
+            }
+
+            select.innerHTML = '';
+            periodos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p + (periodosFechados.includes(p) ? ' 🔒 (Fechado)' : '');
+                if(p === periodoAtual) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            verificarBloqueioPeriodoAtual();
+        }
+
+        function verificarBloqueioPeriodoAtual() {
+            let fechado = periodosFechados.includes(periodoAtual);
+            let badge = document.getElementById('badgeStatusPeriodo');
+            let formNovo = document.getElementById('cardNovoLancamento');
+
+            if (fechado) {
+                if(badge) {
+                    badge.innerText = "Status: FECHADO 🔒";
+                    badge.style.background = "#f8d7da";
+                    badge.style.color = "#721c24";
+                }
+                if(formNovo) formNovo.style.opacity = "0.6";
+                document.getElementById('btnSalvarLancamento').disabled = true;
+                document.getElementById('selectConvenio').disabled = true;
+                document.getElementById('notaFiscal').disabled = true;
+                document.getElementById('dataRec').disabled = true;
+                document.getElementById('vlrBruto').disabled = true;
+                document.getElementById('vlrLiquido').disabled = true;
+            } else {
+                if(badge) {
+                    badge.innerText = "Status: Aberto";
+                    badge.style.background = "#d4edda";
+                    badge.style.color = "#155724";
+                }
+                if(formNovo) formNovo.style.opacity = "1";
+                document.getElementById('btnSalvarLancamento').disabled = false;
+                document.getElementById('selectConvenio').disabled = false;
+                document.getElementById('notaFiscal').disabled = false;
+                document.getElementById('dataRec').disabled = false;
+                document.getElementById('vlrBruto').disabled = false;
+                document.getElementById('vlrLiquido').disabled = false;
+            }
+        }
+
+        function mudarPeriodo(novoPeriodo) {
+            periodoAtual = novoPeriodo;
+            inicializarPeriodos();
+            atualizarTabelaBaixas();
+        }
+
+        function criarNovoPeriodo() {
+            let novo = prompt("Digite o novo período no formato AAAAMM (Ex: 202612):");
+            if(novo) {
+                novo = novo.trim();
+                if(!periodos.includes(novo)) {
+                    periodos.push(novo);
+                }
+                mudarPeriodo(novo);
+                inicializarPeriodos();
+            }
+        }
+
+        function fecharPeriodoAtual() {
+            if (periodosFechados.includes(periodoAtual)) {
+                alert("Este período já está fechado!");
+                return;
+            }
+            let senha = prompt(`Para fechar o período ${periodoAtual} e protegê-lo contra edições, digite a senha mestre de administrador:`);
+            if (senha === null) return;
+            if (senha.trim() === SENHA_MESTRE_ADM) {
+                periodosFechados.push(periodoAtual);
+                enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
+                alert(`Período ${periodoAtual} fechado com sucesso! Os lançamentos e backups foram mantidos em segurança.`);
+                inicializarPeriodos();
+                atualizarTabelaBaixas();
+            } else {
+                alert("Senha mestre incorreta!");
+            }
+        }
+
+        function atualizarSelectReabrir() {
+            let sel = document.getElementById('selectReabrirPeriodo');
+            if(!sel) return;
+            sel.innerHTML = '';
+            if (periodosFechados.length === 0) {
+                let opt = document.createElement('option');
+                opt.textContent = "Nenhum período fechado no momento";
+                sel.appendChild(opt);
+                return;
+            }
+            periodosFechados.forEach(p => {
+                let opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                sel.appendChild(opt);
+            });
+        }
+
+        function reabrirPeriodoSelecionado() {
+            let sel = document.getElementById('selectReabrirPeriodo');
+            if (!sel || periodosFechados.length === 0) return;
+            let periodoAlvo = sel.value;
+            
+            let index = periodosFechados.indexOf(periodoAlvo);
+            if (index > -1) {
+                periodosFechados.splice(index, 1);
+                enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
+                alert(`Período ${periodoAlvo} reaberto com sucesso!`);
+                atualizarSelectReabrir();
+                inicializarPeriodos();
+                atualizarTabelaBaixas();
+            }
+        }
+
+        function obterRegistrosAtuais() {
+            if(!baseDadosBaixas[periodoAtual]) baseDadosBaixas[periodoAtual] = [];
+            return baseDadosBaixas[periodoAtual];
+        }
+
+        function carregarSelectConvenios() {
+            const select = document.getElementById('selectConvenio');
+            if(!select) return;
+
+            let convenioSelecionadoAntes = select.value;
+
+            select.innerHTML = '';
+            ordenarConvenios();
+            let unicos = {};
+            listaConvenios.filter(c => c.ativo === true).forEach(c => { unicos[c.nome] = c; });
+            Object.values(unicos).forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.nome;
+                opt.textContent = c.nome;
+                select.appendChild(opt);
+            });
+
+            if (convenioSelecionadoAntes && select.querySelector(`option[value="${convenioSelecionadoAntes}"]`)) {
+                select.value = convenioSelecionadoAntes;
+            }
+        }
+
+        function atualizarTabelaConvenios() {
+            const tbody = document.querySelector('#tabelaConvenios tbody');
+            if(!tbody) return;
+
+            ordenarConvenios();
+            tbody.innerHTML = '';
+            listaConvenios.forEach((c, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${c.nome}</td>
+                    <td>${c.cnpj}</td>
+                    <td><input type="checkbox" ${c.ativo ? 'checked' : ''} onchange="toggleConvenio(${index}, this.checked)"> ${c.ativo ? 'Ativo' : 'Inativo'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleConvenio(index, status) {
+            listaConvenios[index].ativo = status;
+            ordenarConvenios();
+            carregarSelectConvenios();
+            atualizarTabelaConvenios();
+            enviarDadosNuvem({ action: "salvarConvenios", lista: listaConvenios });
+        }
+
+        document.getElementById('formConvenio').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const novo = {
+                nome: document.getElementById('covNome').value.toUpperCase(),
+                cnpj: document.getElementById('covCNPJ').value,
+                ativo: document.getElementById('covAtivo').checked
+            };
+            listaConvenios.push(novo);
+            ordenarConvenios();
+            carregarSelectConvenios();
+            atualizarTabelaConvenios();
+            this.reset();
+            document.getElementById('covAtivo').checked = true;
+            enviarDadosNuvem({ action: "salvarConvenios", lista: listaConvenios });
+            alert('Convênio adicionado e sincronizado com a nuvem!');
+        });
+
+        document.getElementById('formSenha').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let novaSenha = document.getElementById('inputNovaSenha').value.trim();
+            if(novaSenha) {
+                senhaExclusao = novaSenha;
+                enviarDadosNuvem({ action: "salvarSenha", senha: senhaExclusao });
+                alert('Senha enviada e salva na nuvem com sucesso!');
+                this.reset();
+            }
+        });
+
+        document.getElementById('formInicial').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if(periodosFechados.includes(periodoAtual)) {
+                alert("Este período está fechado. Não é possível adicionar novos lançamentos.");
+                return;
+            }
+            let regs = obterRegistrosAtuais();
+            const item = {
+                id: Date.now(),
+                convenio: document.getElementById('selectConvenio').value,
+                notaFiscal: document.getElementById('notaFiscal').value,
+                dataRec: document.getElementById('dataRec').value,
+                vlrBruto: parseMoedaInput(document.getElementById('vlrBruto').value),
+                vlrLiquido: parseMoedaInput(document.getElementById('vlrLiquido').value),
+                tipo: 'Produção', cobrado: 0, recebido: 0, glosa: 0, baixado: 0, difBaixa: 0, obs: ''
+            };
+            regs.push(item);
+            this.reset();
+            atualizarTabelaBaixas();
+            enviarDadosNuvem({ action: "salvarBaixa", periodo: periodoAtual, item: item });
+            alert('Lançamento salvo e sincronizado!');
+        });
+
+        function calcularLinha(index) {
+            let regs = obterRegistrosAtuais();
+            const cobrado = parseMoedaInput(document.getElementById(`cob_${index}`).value);
+            const recebido = parseMoedaInput(document.getElementById(`rec_${index}`).value);
+            const baixado = parseMoedaInput(document.getElementById(`baix_${index}`).value);
+            const vlrBruto = regs[index].vlrBruto;
+
+            const glosa = cobrado - recebido;
+            const difBaixa = baixado - vlrBruto;
+
+            document.getElementById(`glosa_${index}`).innerText = formatarMoeda(glosa);
+            
+            let difEl = document.getElementById(`dif_${index}`);
+            if(difEl) {
+                difEl.innerText = formatarMoeda(difBaixa);
+                difEl.style.color = difBaixa < 0 ? 'red' : 'green';
+            }
+        }
+
+        function habilitarEdicao(index) {
+            if(periodosFechados.includes(periodoAtual)) {
+                alert("Este período está fechado. Edições bloqueadas.");
+                return;
+            }
+            document.getElementById(`tipo_${index}`).disabled = false;
+            document.getElementById(`cob_${index}`).disabled = false;
+            document.getElementById(`rec_${index}`).disabled = false;
+            document.getElementById(`baix_${index}`).disabled = false;
+            document.getElementById(`obs_${index}`).disabled = false;
+
+            document.getElementById(`btn_edit_${index}`).style.display = 'none';
+            document.getElementById(`btn_save_${index}`).style.display = 'flex';
+        }
+
+        function salvarLinha(index) {
+            let regs = obterRegistrosAtuais();
+            regs[index].tipo = document.getElementById(`tipo_${index}`).value;
+            regs[index].cobrado = parseMoedaInput(document.getElementById(`cob_${index}`).value);
+            regs[index].recebido = parseMoedaInput(document.getElementById(`rec_${index}`).value);
+            regs[index].glosa = regs[index].cobrado - regs[index].recebido;
+            regs[index].baixado = parseMoedaInput(document.getElementById(`baix_${index}`).value);
+            regs[index].difBaixa = regs[index].baixado - regs[index].vlrBruto;
+            let obsVal = document.getElementById(`obs_${index}`).value;
+            regs[index].obs = (obsVal && obsVal !== 'undefined') ? obsVal : '';
+
+            enviarDadosNuvem({ action: "salvarBaixa", periodo: periodoAtual, item: regs[index] });
+            alert('Baixa atualizada e salva na nuvem!');
+            atualizarTabelaBaixas();
+        }
+
+        function excluirLinha(index) {
+            if(periodosFechados.includes(periodoAtual)) {
+                alert("Este período está fechado. Exclusões bloqueadas.");
+                return;
+            }
+            if (!senhaExclusao) {
+                alert("Nenhuma senha de exclusão foi configurada ou sincronizada ainda. Vá na aba Configurações e cadastre uma senha.");
+                return;
+            }
+
+            let senhaDigitada = prompt("Deseja mesmo excluir? Digite a senha de segurança:");
+            if (senhaDigitada === null) return;
+
+            if (senhaDigitada.trim() === senhaExclusao.trim()) {
+                let regs = obterRegistrosAtuais();
+                let itemId = regs[index].id;
+                regs.splice(index, 1);
+                enviarDadosNuvem({ action: "excluirBaixa", id: itemId });
+                atualizarTabelaBaixas();
+                alert("Registro excluído com sucesso.");
+            } else {
+                alert("Senha incorreta!");
+            }
+        }
+
+        function formatarValorInput(valor) {
+            if (valor === undefined || valor === null || isNaN(valor)) return '';
+            let absVal = Math.abs(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            return valor < 0 ? '-' + absVal : absVal;
+        }
+
+        function atualizarTabelaBaixas() {
+            let regs = obterRegistrosAtuais();
+            const tbody = document.querySelector('#tabelaBaixas tbody');
+            if(!tbody) return;
+
+            let elementoAtivo = document.activeElement;
+            if (elementoAtivo && elementoAtivo.id && (elementoAtivo.id.startsWith('cob_') || elementoAtivo.id.startsWith('rec_') || elementoAtivo.id.startsWith('baix_') || elementoAtivo.id.startsWith('obs_') || elementoAtivo.id.startsWith('tipo_'))) {
+                return;
+            }
+
+            let fechado = periodosFechados.includes(periodoAtual);
+
+            tbody.innerHTML = '';
+            regs.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                let obsStr = (item.obs && item.obs !== 'undefined') ? item.obs : '';
+                let corDif = item.difBaixa < 0 ? 'red' : 'green';
+
+                tr.innerHTML = `
+                    <td>${item.convenio}</td>
+                    <td>${item.notaFiscal}</td>
+                    <td>${formatarDataBR(item.dataRec)}</td>
+                    <td>${formatarMoeda(item.vlrBruto)}</td>
+                    <td>${formatarMoeda(item.vlrLiquido)}</td>
+                    <td>
+                        <select id="tipo_${index}" class="input-inline" disabled>
+                            <option value="Produção" ${item.tipo === 'Produção' ? 'selected' : ''}>Produção</option>
+                            <option value="Recurso" ${item.tipo === 'Recurso' ? 'selected' : ''}>Recurso</option>
+                            <option value="Prod/rec" ${item.tipo === 'Prod/rec' ? 'selected' : ''}>Prod/rec</option>
+                            <option value="Compl" ${item.tipo === 'Compl' ? 'selected' : ''}>Compl</option>
+                        </select>
+                    </td>
+                    <td><input type="text" id="cob_${index}" value="${formatarValorInput(item.cobrado)}" class="input-inline" disabled oninput="mascaraMoedaInput(this); calcularLinha(${index})"></td>
+                    <td><input type="text" id="rec_${index}" value="${formatarValorInput(item.recebido)}" class="input-inline" disabled oninput="mascaraMoedaInput(this); calcularLinha(${index})"></td>
+                    <td id="glosa_${index}">${formatarMoeda(item.glosa)}</td>
+                    <td><input type="text" id="baix_${index}" value="${formatarValorInput(item.baixado)}" class="input-inline" disabled oninput="mascaraMoedaInput(this); calcularLinha(${index})"></td>
+                    <td id="dif_${index}" style="color: ${corDif}; font-weight: bold;">${formatarMoeda(item.difBaixa)}</td>
+                    <td><input type="text" id="obs_${index}" value="${obsStr}" title="${obsStr}" class="input-inline" disabled></td>
+                    <td>
+                        <div class="btn-action-group">
+                            ${!fechado ? `
+                                <button class="action-btn btn-edit" id="btn_edit_${index}" title="Editar" onclick="habilitarEdicao(${index})">⚙️</button>
+                                <button class="action-btn btn-save" id="btn_save_${index}" title="Salvar" onclick="salvarLinha(${index})">✅</button>
+                                <button class="action-btn btn-delete" title="Excluir" onclick="excluirLinha(${index})">❌</button>
+                            ` : '<span style="font-size:10px; color:#999;">Fechado</span>'}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            atualizarDashboard();
+        }
+
+        function switchTab(tabId, evt) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            }
+
+            if(tabId !== 'configuracoes') {
+                bloquearConfig();
+            }
+
+            if(tabId === 'graficos') atualizarDashboard();
+        }
+
+        function atualizarDashboard() {
+            let regs = obterRegistrosAtuais();
+            let totalBrutoGeral = 0;
+            let totalBaixadoGeral = 0;
+            let totalDifGeral = 0;
+            let resumoMap = {};
+
+            listaConvenios.forEach(c => {
+                resumoMap[c.nome] = { vlrBruto: 0, recebido: 0, baixado: 0 };
+            });
+
+            regs.forEach(r => {
+                if(!resumoMap[r.convenio]) resumoMap[r.convenio] = { vlrBruto: 0, recebido: 0, baixado: 0 };
+                
+                let valorRecEfetivo = (r.recebido !== 0 || r.cobrado !== 0) ? r.recebido : r.vlrLiquido;
+
+                resumoMap[r.convenio].vlrBruto += r.vlrBruto;
+                resumoMap[r.convenio].recebido += valorRecEfetivo;
+                resumoMap[r.convenio].baixado += r.baixado;
+
+                totalBrutoGeral += r.vlrBruto;
+                totalBaixadoGeral += r.baixado;
+            });
+
+            let totalRecebidoGeral = 0;
+            Object.values(resumoMap).forEach(item => { totalRecebidoGeral += item.recebido; });
+
+            let pctGeral = totalRecebidoGeral !== 0 ? (totalBaixadoGeral / totalRecebidoGeral) * 100 : 0;
+
+            document.getElementById('kpiRecebido').innerText = formatarMoeda(totalBrutoGeral);
+            document.getElementById('kpiBaixado').innerText = formatarMoeda(totalBaixadoGeral);
+            document.getElementById('kpiPct').innerText = `${pctGeral.toFixed(2)}%`;
+
+            const tbody = document.querySelector('#tabelaResumo tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            let labelsChart = [];
+            let dataRecChart = [];
+            let dataBaixChart = [];
+
+            Object.keys(resumoMap).forEach(key => {
+                const item = resumoMap[key];
+                if(item.vlrBruto !== 0 || item.recebido !== 0 || item.baixado !== 0) {
+                    let pct = item.recebido !== 0 ? (item.baixado / item.recebido) * 100 : 0;
+                    let difBaixa = item.baixado - item.vlrBruto;
+                    totalDifGeral += difBaixa;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${key}</td>
+                        <td>${formatarMoeda(item.vlrBruto)}</td>
+                        <td>${formatarMoeda(item.recebido)}</td>
+                        <td>${formatarMoeda(item.baixado)}</td>
+                        <td>${pct.toFixed(2)}%</td>
+                        <td style="color: ${difBaixa < 0 ? 'red' : 'green'}; font-weight: bold;">${formatarMoeda(difBaixa)}</td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    labelsChart.push(key);
+                    dataRecChart.push(item.recebido);
+                    dataBaixChart.push(item.baixado);
+                }
+            });
+
+            document.getElementById('kpiDifGeral').innerText = formatarMoeda(totalDifGeral);
+
+            if(chartRecInstance) chartRecInstance.destroy();
+            if(chartBaixInstance) chartBaixInstance.destroy();
+
+            const ctxRec = document.getElementById('chartRecebido').getContext('2d');
+            chartRecInstance = new Chart(ctxRec, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsChart,
+                    datasets: [{ data: dataRecChart, backgroundColor: ['#1b4332', '#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ctxBaix = document.getElementById('chartBaixado').getContext('2d');
+            chartBaixInstance = new Chart(ctxBaix, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsChart,
+                    datasets: [{ data: dataBaixChart, backgroundColor: ['#1b4332', '#2d6a4f', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // Inicializar
+        carregarDadosNuvem();
+        setInterval(carregarDadosNuvem, 30000);
+    </script>
+</body>
+</html>
