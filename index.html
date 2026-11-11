@@ -432,7 +432,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbw94XRTry86xXiTShyPP4w1Rg3lHB47Wz_zNoz-QsNKhGqi1dn9wNd7Kv0mX2EH2Ms/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbz4673aZVdvwuvkPYBW0hpM1va1urHN9xfKNnyU5MYe_pjszNbtK1U2AobmNCY-eA0POg/exec";
         const SENHA_MESTRE_ADM = "coopanest2026"; 
 
         function formatarDataBR(dataStr) {
@@ -739,7 +739,7 @@
                 
                 await enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
 
-                // Procura o próximo período na lista decrescente (ex: se fechou 202610, muda para 202611)
+                // Lógica para avançar automaticamente para o próximo período (cronologicamente posterior / índice anterior no array decrescente)
                 let indexAtual = periodos.indexOf(periodoFechadoAgora);
                 if (indexAtual > 0) {
                     periodoAtual = periodos[indexAtual - 1];
