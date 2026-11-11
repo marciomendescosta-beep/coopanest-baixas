@@ -737,15 +737,16 @@
                     periodosFechados.push(periodoFechadoAgora);
                 }
                 
+                // Salva na nuvem e aguarda
                 await enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
 
-                // Lógica para avançar automaticamente para o próximo período (cronologicamente posterior / índice anterior no array decrescente)
+                // Identifica o próximo período cronologicamente superior (índice anterior no array decrescente, ex: 202610 -> 202611)
                 let indexAtual = periodos.indexOf(periodoFechadoAgora);
                 if (indexAtual > 0) {
                     periodoAtual = periodos[indexAtual - 1];
                 }
 
-                alert(`Período ${periodoFechadoAgora} fechado com sucesso!`);
+                alert(`Período ${periodoFechadoAgora} fechado com sucesso! O sistema avançou para o período ${periodoAtual}.`);
                 inicializarPeriodos();
                 atualizarTabelaBaixas();
             } else {
