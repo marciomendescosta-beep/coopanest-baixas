@@ -632,15 +632,17 @@
             try {
                 let params = new URLSearchParams();
                 for (let key in payload) {
-                    if (typeof payload[key] === 'object') {
-                        params.append(key, JSON.stringify(payload[key]));
+                    let val = payload[key];
+                    if (typeof val === 'object' && val !== null) {
+                        params.append(key, JSON.stringify(val));
                     } else {
-                        params.append(key, payload[key]);
+                        params.append(key, val !== undefined && val !== null ? val : '');
                     }
                 }
                 await fetch(`${API_URL}?${params.toString()}`);
                 document.getElementById('statusSync').innerText = "Sincronizado";
             } catch(e) {
+                console.error(e);
                 document.getElementById('statusSync').innerText = "Erro ao Sincronizar";
             }
         }
