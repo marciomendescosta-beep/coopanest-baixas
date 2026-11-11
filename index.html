@@ -630,16 +630,15 @@
         async function enviarDadosNuvem(payload) {
             if(API_URL.includes("SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI")) return;
             try {
-                navigator.sendBeacon(API_URL, JSON.stringify(payload));
-                document.getElementById('statusSync').innerText = "Sincronizado";
-            } catch(e) {
-                fetch(API_URL, {
+                await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
-                }).catch(() => {});
+                });
                 document.getElementById('statusSync').innerText = "Sincronizado";
+            } catch(e) {
+                document.getElementById('statusSync').innerText = "Erro ao Sincronizar";
             }
         }
 
@@ -725,7 +724,7 @@
             }
         }
 
-        function fecharPeriodoAtual() {
+        async function fecharPeriodoAtual() {
             if (periodosFechados.includes(periodoAtual)) {
                 alert("Este período já está fechado!");
                 return;
@@ -734,16 +733,16 @@
             if (senha === null) return;
             if (senha.trim() === SENHA_MESTRE_ADM) {
                 let periodoFechadoAgora = periodoAtual;
-                periodosFechados.push(periodoFechadoAgora);
-                enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
+                if (!periodosFechados.includes(periodoFechadoAgora)) {
+                    periodosFechados.push(periodoFechadoAgora);
+                }
+                
+                await enviarDadosNuvem({ action: "salvarPeriodosFechados", periodos: periodosFechados });
 
-                // Tenta encontrar o próximo período sequencial (cronologicamente menor na lista decrescente)
-                // Ex: Se fechou 202610 e existe 202611 na lista, abre ele automaticamente.
+                // Procura o próximo período na lista decrescente (ex: se fechou 202610, muda para 202611)
                 let indexAtual = periodos.indexOf(periodoFechadoAgora);
                 if (indexAtual > 0) {
-                    // periodos está ordenado de forma decrescente (ex: 202611, 202610), então o anterior no array é o período seguinte/mais recente
-                    let proximoPeriodo = periodos[indexAtual - 1];
-                    periodoAtual = proximoPeriodo;
+                    periodoAtual = periodos[indexAtual - 1];
                 }
 
                 alert(`Período ${periodoFechadoAgora} fechado com sucesso!`);
