@@ -639,7 +639,7 @@
                         params.append(key, val !== undefined && val !== null ? val : '');
                     }
                 }
-                await fetch(`${API_URL}?${params.toString()}`);
+                await fetch(`${API_URL}&${params.toString()}`);
                 document.getElementById('statusSync').innerText = "Sincronizado";
             } catch(e) {
                 console.error(e);
